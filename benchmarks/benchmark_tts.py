@@ -87,7 +87,7 @@ def main() -> None:
     parser.add_argument("--output", default="outputs/benchmark.wav")
     parser.add_argument("--chunk-frames", type=int, default=10)
     parser.add_argument("--max-frames", type=int)
-    parser.add_argument("--runs", type=int, default=2)
+    parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--notes", default="")
     asyncio.run(run_once(parser.parse_args()))
 

@@ -28,8 +28,8 @@ talker path, even if latency is not yet final.
 
 Add these one at a time and record a benchmark row after each change.
 
-1. **Warm/cold benchmark split**: run twice and record cold initialization
-   separately from warm generation timing.
+1. **Single-run benchmark stability**: run one benchmark per process and append
+   a CSV row so hangs in repeated same-process generation do not block progress.
 2. **TTS vocab-sized LM head launch**: reduce output scan blocks because codec
    vocab is much smaller than text vocab.
 3. **Embedding sentinel path**: avoid extra embedding lookup launches by feeding
@@ -53,15 +53,16 @@ Add these one at a time and record a benchmark row after each change.
 
 ## Benchmark Notes
 
-Cold timing includes model load, extension build/cache lookup, tensor allocation,
-and warmup. Warm timing is the number to compare for steady-state latency.
+Single-run timing includes model load, extension build/cache lookup, tensor
+allocation, and warmup. Use matching single-run rows to compare sequential code
+states. If same-process warm generation is fixed later, `--runs 2` can still be
+used to collect a cold row and a warm row.
 
 The benchmark writes:
 
-- `init_ms`: initialization and warmup time for cold run; zero for warm run.
+- `init_ms`: initialization and warmup time for the run.
 - `ttfc_ms`: time from text request to first emitted audio chunk.
 - `generation_ms`: streaming generation time excluding initialization.
 - `end_to_end_ms`: `init_ms + generation_ms`.
 - `rtf`: generation time divided by produced audio duration.
 - `notes`: manual description of the active change.
-

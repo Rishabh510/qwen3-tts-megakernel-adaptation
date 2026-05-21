@@ -108,9 +108,9 @@ python benchmarks/benchmark_tts.py \
 ```
 
 The benchmark CSV is written to `outputs/benchmark_results.csv` by default. It
-runs twice by default: first row is cold, second row is warm. Compare warm rows
-when judging latency changes; cold rows help explain model load, JIT, and warmup
-cost.
+runs once by default because repeated generation in the same process can hang on
+some rented GPU images. For steady comparisons, run the command once per code
+state and compare rows with matching notes.
 
 Run the no-API-key Pipecat-style TTS harness:
 

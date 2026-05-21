@@ -84,7 +84,7 @@ branches instead of CUDA patch files unless they actually edit
 Recommended branch sequence after the first GPU validation:
 
 1. `main`: base adaptation and benchmark harness.
-2. `opt/01-warm-cold-benchmark`: benchmark reporting only.
+2. `opt/01-single-run-benchmark`: benchmark reporting only.
 3. `opt/02-codebook-kernel`: codebook predictor kernel path.
 4. `opt/03-constant-embedding-cache`: cached prompt/special embeddings.
 5. `opt/04-vocoder-sampling-warmup`: warmup timing cleanup.
@@ -98,4 +98,4 @@ Benchmark each branch with:
 ./benchmarks/benchmark_current_stage.sh
 ```
 
-Use warm rows for latency comparison and cold rows only to explain setup cost.
+Use rows with matching prompt, branch, and notes for latency comparison.
