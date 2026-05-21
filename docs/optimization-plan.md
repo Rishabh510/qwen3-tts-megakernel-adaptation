@@ -71,5 +71,7 @@ The benchmark writes:
 - `ttfc_ms`: time from text request to first emitted audio chunk.
 - `generation_ms`: streaming generation time excluding initialization.
 - `end_to_end_ms`: `init_ms + generation_ms`.
+- `codebook_ms`: CUDA event time spent in codebook prediction across frames.
+- `vocoder_ms`: wall-clock time spent decoding codec chunks to waveform audio.
 - `rtf`: generation time divided by produced audio duration.
 - `notes`: manual description of the active change.

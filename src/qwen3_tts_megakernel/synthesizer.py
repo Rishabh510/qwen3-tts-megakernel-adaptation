@@ -44,6 +44,10 @@ class SynthesisMetrics:
     init_ms: float = 0.0
     ttfc_ms: float = 0.0
     total_ms: float = 0.0
+    codebook_ms: float = 0.0
+    first_codebook_ms: float = 0.0
+    vocoder_ms: float = 0.0
+    first_vocoder_ms: float = 0.0
     audio_seconds: float = 0.0
     chunks: int = 0
     frames: int = 0
@@ -53,6 +57,14 @@ class SynthesisMetrics:
     def rtf(self) -> float:
         return self.total_ms / 1000.0 / self.audio_seconds if self.audio_seconds else 0.0
 
+    @property
+    def codebook_ms_per_frame(self) -> float:
+        return self.codebook_ms / self.frames if self.frames else 0.0
+
+    @property
+    def vocoder_ms_per_chunk(self) -> float:
+        return self.vocoder_ms / self.chunks if self.chunks else 0.0
+
 
 class StreamingSynthesizer:
     """Generate audio chunks from text with adapted talker/codebook kernels."""
@@ -61,6 +73,7 @@ class StreamingSynthesizer:
         self.config = config or SynthesizerConfig()
         self.metrics = SynthesisMetrics(notes=self.config.notes)
         self._ready = False
+        self._codebook_events: list[tuple[torch.cuda.Event, torch.cuda.Event]] = []
 
     def initialize(self) -> None:
         if self._ready:
@@ -187,6 +200,9 @@ class StreamingSynthesizer:
         max_frames = self._estimate_frame_limit(text)
 
         for _ in range(max_frames):
+            codebook_start = torch.cuda.Event(enable_timing=True)
+            codebook_end = torch.cuda.Event(enable_timing=True)
+            codebook_start.record()
             codes = self.codebook_predictor.predict(
                 hidden,
                 previous_token,
@@ -195,6 +211,8 @@ class StreamingSynthesizer:
                 temperature=cfg.temperature,
                 top_k=cfg.top_k,
             )
+            codebook_end.record()
+            self._codebook_events.append((codebook_start, codebook_end))
             yield codes
 
             embed_sum = torch.nn.functional.embedding(
@@ -215,8 +233,20 @@ class StreamingSynthesizer:
         if not frames:
             return np.zeros(0, dtype=np.float32), self.config.sample_rate
         codes = torch.stack(frames, dim=0)
+        t0 = time.perf_counter()
         wavs, sample_rate = self.speech_tokenizer.decode([{"audio_codes": codes}])
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        self.metrics.vocoder_ms += elapsed_ms
+        if self.metrics.chunks == 0:
+            self.metrics.first_vocoder_ms = elapsed_ms
         return wavs[0], sample_rate
+
+    def _finish_component_timing(self) -> None:
+        if not self._codebook_events:
+            return
+        elapsed = [start.elapsed_time(end) for start, end in self._codebook_events]
+        self.metrics.codebook_ms = sum(elapsed)
+        self.metrics.first_codebook_ms = elapsed[0]
 
     async def stream(self, text: str) -> AsyncGenerator[tuple[np.ndarray, int], None]:
         was_ready = self._ready
@@ -224,6 +254,7 @@ class StreamingSynthesizer:
         init_ms = 0.0 if was_ready else self.metrics.init_ms
         cfg = self.config
         self.metrics = SynthesisMetrics(init_ms=init_ms, notes=cfg.notes)
+        self._codebook_events = []
         buffer: list[torch.Tensor] = []
         first = True
         samples = 0
@@ -253,5 +284,6 @@ class StreamingSynthesizer:
             yield audio, sample_rate
 
         torch.cuda.synchronize()
+        self._finish_component_timing()
         self.metrics.total_ms = (time.perf_counter() - start) * 1000
         self.metrics.audio_seconds = samples / float(cfg.sample_rate)
