@@ -30,8 +30,9 @@ Add these one at a time and record a benchmark row after each change.
 
 1. **Single-run benchmark stability**: run one benchmark per process and append
    a CSV row so hangs in repeated same-process generation do not block progress.
-2. **TTS vocab-sized LM head launch**: reduce output scan blocks because codec
-   vocab is much smaller than text vocab.
+2. **TTS LM-head launch shape**: keep the required codec vocab size `3072`, but
+   reduce output scan launch geometry because codec vocab is much smaller than
+   text vocab.
 3. **Embedding sentinel path**: avoid extra embedding lookup launches by feeding
    summed TTS embeddings directly to the kernel.
 4. **Codebook predictor kernel reuse**: run the 5-layer codebook predictor
