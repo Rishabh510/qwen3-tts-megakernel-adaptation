@@ -10,6 +10,7 @@ from torch.utils.cpp_extension import load
 
 _MODULE = None
 _MODULE_NAME = None
+_DECODE_OP = None
 
 
 def _root() -> Path:
@@ -104,5 +105,9 @@ def get_extension():
 
 def get_decode_op():
     """Build the extension and return the registered decode op."""
+    global _DECODE_OP
+    if _DECODE_OP is not None:
+        return _DECODE_OP
     get_extension()
-    return getattr(torch.ops, _MODULE_NAME).decode
+    _DECODE_OP = getattr(torch.ops, _MODULE_NAME).decode
+    return _DECODE_OP

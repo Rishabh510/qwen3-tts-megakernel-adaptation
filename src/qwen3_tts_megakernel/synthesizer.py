@@ -135,7 +135,7 @@ class StreamingSynthesizer:
 
     def _warmup(self) -> None:
         self.talker.reset()
-        _, hidden = self.talker.step_embedding(self.codec_bos_embedding)
+        _, hidden = self.talker.step_token(CODEC_BOS_ID)
         for do_sample in (False, True):
             self.codebook_predictor.predict(
                 hidden,
@@ -180,8 +180,7 @@ class StreamingSynthesizer:
         for row in prefill:
             self.talker.step_embedding(row)
 
-        _, hidden = self.talker.step_embedding(self.codec_bos_embedding)
-        first_token = CODEC_BOS_ID
+        first_token, hidden = self.talker.step_token(CODEC_BOS_ID)
         previous_token = first_token
         trailing_idx = 0
         max_frames = self._estimate_frame_limit(text)
