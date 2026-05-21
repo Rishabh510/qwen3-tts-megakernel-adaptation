@@ -13,7 +13,6 @@ import torch
 from .adapter import CodebookPredictorKernel, TalkerKernelAdapter, TextProjector
 from .constants import (
     CODEC_BOS_ID,
-    CODEC_EOS_ID,
     CODEC_NOTHINK_ID,
     CODEC_PAD_ID,
     CODEC_THINK_BOS_ID,
@@ -135,11 +134,11 @@ class StreamingSynthesizer:
 
     def _warmup(self) -> None:
         self.talker.reset()
-        _, hidden = self.talker.step_token(CODEC_BOS_ID)
+        first_token, hidden = self.talker.step_token(CODEC_BOS_ID)
         for do_sample in (False, False, True, True, True):
             self.codebook_predictor.predict(
                 hidden,
-                CODEC_BOS_ID,
+                first_token,
                 self.codec_embedding,
                 do_sample=do_sample,
                 temperature=self.config.temperature,
@@ -188,8 +187,6 @@ class StreamingSynthesizer:
         max_frames = self._estimate_frame_limit(text)
 
         for _ in range(max_frames):
-            if previous_token == CODEC_EOS_ID:
-                break
             codes = self.codebook_predictor.predict(
                 hidden,
                 previous_token,

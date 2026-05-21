@@ -109,22 +109,22 @@ class TalkerKernelAdapter:
         self.v_cache.zero_()
 
     @torch.no_grad()
-    def step_token(self, token_id: int) -> tuple[int, torch.Tensor]:
+    def step_token(self, token_id: int) -> tuple[torch.Tensor, torch.Tensor]:
         return self._step(token_id)
 
     @torch.no_grad()
-    def step_embedding(self, embedding: torch.Tensor) -> tuple[int, torch.Tensor]:
+    def step_embedding(self, embedding: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         self.hidden.copy_(embedding.to(torch.bfloat16))
         return self._step(EMBEDDING_SENTINEL_TOKEN_ID)
 
     @torch.no_grad()
-    def step_embedding_into(self, embedding: torch.Tensor, out: torch.Tensor) -> int:
+    def step_embedding_into(self, embedding: torch.Tensor, out: torch.Tensor) -> torch.Tensor:
         self.hidden.copy_(embedding.to(torch.bfloat16))
-        token, hidden = self._step(EMBEDDING_SENTINEL_TOKEN_ID, clone_hidden=False)
+        token, hidden = self._step(EMBEDDING_SENTINEL_TOKEN_ID)
         out.copy_(hidden)
         return token
 
-    def _step(self, token_id: int, *, clone_hidden: bool = True) -> tuple[int, torch.Tensor]:
+    def _step(self, token_id: int) -> tuple[torch.Tensor, torch.Tensor]:
         self._decode(
             self.output_token,
             token_id,
@@ -153,8 +153,7 @@ class TalkerKernelAdapter:
             self.attn_scale,
         )
         self.position += 1
-        hidden = self.norm_out.clone() if clone_hidden else self.norm_out
-        return int(self.output_token.item()), hidden
+        return self.output_token, self.norm_out
 
 
 class CodebookPredictorKernel:
@@ -264,7 +263,7 @@ class CodebookPredictorKernel:
     def predict(
         self,
         talker_hidden: torch.Tensor,
-        first_token: int,
+        first_token: int | torch.Tensor,
         talker_codec_embedding: torch.Tensor,
         *,
         do_sample: bool = True,
@@ -273,11 +272,14 @@ class CodebookPredictorKernel:
     ) -> torch.Tensor:
         self.reset()
         self._step_embedding(talker_hidden)
-        self.token_buf[0] = first_token
+        if isinstance(first_token, torch.Tensor):
+            self.token_buf.copy_(first_token)
+        else:
+            self.token_buf[0] = first_token
         first_embed = torch.nn.functional.embedding(self.token_buf, talker_codec_embedding)[0]
         self._step_embedding(first_embed)
 
-        self.output_codes[0] = first_token
+        self.output_codes[0] = self.token_buf[0]
         for group_idx in range(NUM_CODE_GROUPS - 1):
             logits = torch.nn.functional.linear(
                 self.norm_out.to(torch.bfloat16).unsqueeze(0), self.lm_heads[group_idx]

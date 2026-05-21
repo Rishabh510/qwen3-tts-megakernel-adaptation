@@ -46,9 +46,12 @@ Add these one at a time and record a benchmark row after each change.
    allocation/JIT cost.
 7. **First-frame-first streaming**: emit the first audio chunk after one codec
    frame, then use 10-frame follow-up chunks for playback efficiency.
-8. **Stopping heuristic tuning**: tune max-frame limits and EOS handling to avoid
+8. **GPU-resident talker token**: keep the first codebook token on GPU between
+   the talker and codebook predictor instead of calling `.item()` once per
+   frame.
+9. **Stopping heuristic tuning**: tune max-frame limits and EOS handling to avoid
     runaway generation without cutting speech short.
-9. **Audio quality pass**: compare short/medium prompts by ear and mark glitches,
+10. **Audio quality pass**: compare short/medium prompts by ear and mark glitches,
     dropped frames, early cutoff, or repeated speech in the CSV notes.
 
 Evidence note: two attempted Python-side buffer/chunk-size changes were removed
