@@ -50,6 +50,11 @@ nano .env
 ./scripts/gpu_bootstrap.sh
 ```
 
+If the machine has multiple CUDA toolkits, the scripts try to select CUDA 12.8
+from `/usr/local/cuda-12.8*` before building CUDA extensions. If you only see
+CUDA 13.x from `nvcc --version`, switch to a CUDA 12.8 template or install a
+CUDA 12.8 toolkit before running the TTS benchmark.
+
 Fill at least these values in `.env`:
 
 ```text
