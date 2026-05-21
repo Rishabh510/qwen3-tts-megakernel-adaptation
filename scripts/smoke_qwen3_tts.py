@@ -14,7 +14,7 @@ OUT_DIR = os.environ.get("OUT_DIR", "outputs")
 def main() -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    attn_impl = os.environ.get("ATTN_IMPLEMENTATION", "flash_attention_2")
+    attn_impl = os.environ.get("ATTN_IMPLEMENTATION", "sdpa")
     print(f"loading model={MODEL_ID} attn_implementation={attn_impl}")
     tts = Qwen3TTSModel.from_pretrained(
         MODEL_ID,

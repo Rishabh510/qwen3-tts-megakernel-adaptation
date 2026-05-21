@@ -68,4 +68,3 @@ def get_extension():
         verbose=bool(int(os.getenv("VERBOSE_BUILD", "0"))),
     )
     return _MODULE
-
