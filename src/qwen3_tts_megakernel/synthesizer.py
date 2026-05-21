@@ -101,11 +101,39 @@ class StreamingSynthesizer:
         self._ready = True
 
     def _load_speech_tokenizer(self):
+        import transformers.utils.generic
         from qwen_tts import Qwen3TTSTokenizer
+        from qwen_tts.core import Qwen3TTSTokenizerV2Config, Qwen3TTSTokenizerV2Model
+        from transformers import AutoConfig, AutoModel
+
+        if not hasattr(transformers.utils.generic, "check_model_inputs"):
+            def _check_model_inputs(*args, **kwargs):
+                def decorator(func):
+                    return func
+
+                return decorator
+
+            transformers.utils.generic.check_model_inputs = _check_model_inputs
+
+        try:
+            AutoConfig.register("qwen3_tts_tokenizer_12hz", Qwen3TTSTokenizerV2Config)
+            AutoModel.register(Qwen3TTSTokenizerV2Config, Qwen3TTSTokenizerV2Model)
+        except ValueError:
+            pass
 
         model_dir = resolve_model_dir(self.config.model_id)
-        tokenizer_dir = model_dir / "speech_tokenizer"
-        tokenizer = Qwen3TTSTokenizer.from_pretrained(str(tokenizer_dir))
+        model = AutoModel.from_pretrained(
+            str(model_dir),
+            subfolder="speech_tokenizer",
+            device_map=self.config.device,
+            dtype=torch.bfloat16,
+            trust_remote_code=True,
+        )
+        tokenizer = Qwen3TTSTokenizer()
+        tokenizer.model = model
+        tokenizer.feature_extractor = None
+        tokenizer.config = model.config
+        tokenizer.device = model.device
         self.config.sample_rate = tokenizer.get_output_sample_rate()
         return tokenizer
 
