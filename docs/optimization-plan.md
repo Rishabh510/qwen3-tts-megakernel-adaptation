@@ -33,8 +33,8 @@ Add these one at a time and record a benchmark row after each change.
 2. **TTS LM-head launch shape**: keep the required codec vocab size `3072`, but
    reduce output scan launch geometry because codec vocab is much smaller than
    text vocab.
-3. **Embedding sentinel path**: avoid extra embedding lookup launches by feeding
-   summed TTS embeddings directly to the kernel.
+3. **BOS embedding sentinel use**: reuse the cached codec BOS embedding for
+   warmup and first generation step instead of asking the kernel to look it up.
 4. **Codebook predictor kernel reuse**: run the 5-layer codebook predictor
    through the same CUDA path instead of PyTorch.
 5. **Constant embedding cache**: precompute role, TTS special, and codec tag
