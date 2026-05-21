@@ -104,7 +104,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=7860)
     parser.add_argument("--share", action="store_true")
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-0.6B-Base")
-    parser.add_argument("--chunk-frames", type=int, default=10)
+    parser.add_argument("--chunk-frames", type=int, default=24)
     parser.add_argument("--first-chunk-frames", type=int, default=1)
     parser.add_argument("--max-frames", type=int)
     parser.add_argument("--whisper-model", default="base")

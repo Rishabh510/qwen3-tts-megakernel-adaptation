@@ -150,7 +150,7 @@ def main() -> None:
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-0.6B-Base")
-    parser.add_argument("--chunk-frames", type=int, default=10)
+    parser.add_argument("--chunk-frames", type=int, default=24)
     parser.add_argument("--notes", default="")
     parser.add_argument("--whisper-model", default="base")
     parser.add_argument("--whisper-device", default="auto")

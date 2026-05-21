@@ -41,8 +41,9 @@ Add these one at a time and record a benchmark row after each change.
 5. **Next-frame embedding buffer reuse**: build the summed next-frame embedding
    with direct indexed table reads into a reusable tensor instead of repeated
    tiny `embedding` calls and temporary additions.
-6. **Vocoder warmup**: run dummy decode calls before measuring so first audio
-   chunk timing does not include lazy initialization.
+6. **Two-phase chunk sizing**: emit the first frame immediately for TTFC, then
+   decode larger follow-up chunks to reduce repeated vocoder calls and improve
+   total RTF.
 7. **Sampling warmup**: exercise `topk`, `softmax`, and `multinomial` once before
    timing sampled generation.
 8. **First-frame-first streaming**: emit the first audio chunk after one codec
