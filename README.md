@@ -37,10 +37,28 @@ kernel under `vendor/qwen_megakernel`.
 
 Use a CUDA 12.8+ RTX 5090 machine.
 
+For Vast.ai, use an RTX 5090 instance with CUDA 12.8 and PyTorch 2.7+ support.
+Use `/workspace` for the checkout so model caches and outputs land on the
+attached volume.
+
 ```bash
+cd /workspace
 git clone https://github.com/Rishabh510/qwen3-tts-megakernel-adaptation.git
 cd qwen3-tts-megakernel-adaptation
+cp .env.template .env
+nano .env
 ./scripts/gpu_bootstrap.sh
+```
+
+Fill at least these values in `.env`:
+
+```text
+GOOGLE_API_KEY=<your-key>
+GEMINI_MODEL=gemini-3.1-flash-lite
+HF_HOME=/workspace/.cache/huggingface
+NLTK_DATA=/workspace/.cache/nltk_data
+GRADIO_HOST=0.0.0.0
+GRADIO_PORT=7860
 ```
 
 The bootstrap script:
@@ -56,6 +74,7 @@ Run the smoke test:
 
 ```bash
 source .venv/bin/activate
+python scripts/smoke_stt_llm.py --whisper-model tiny
 ./scripts/run_phase1_smoke.sh
 ```
 
@@ -115,6 +134,19 @@ ssh -L 7860:localhost:7860 root@<vast-host> -p <ssh-port>
 Open `http://localhost:7860` locally. If SSH forwarding is inconvenient, set
 `GRADIO_SHARE=1` in `.env` before running the demo to request a temporary Gradio
 share URL.
+
+To pull updates on the rented machine:
+
+```bash
+git pull --ff-only
+```
+
+Then rerun only the changed step, usually:
+
+```bash
+source .venv/bin/activate
+./benchmarks/benchmark_current_stage.sh
+```
 
 Before renting a GPU, test the constant STT/LLM front half:
 
