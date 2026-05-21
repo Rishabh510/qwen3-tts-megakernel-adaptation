@@ -1,6 +1,15 @@
 """Qwen3-TTS megakernel adaptation package."""
 
-from .synthesizer import StreamingSynthesizer, SynthesizerConfig
-
 __all__ = ["StreamingSynthesizer", "SynthesizerConfig"]
 
+
+def __getattr__(name):
+    if name in __all__:
+        from .synthesizer import StreamingSynthesizer, SynthesizerConfig
+
+        exports = {
+            "StreamingSynthesizer": StreamingSynthesizer,
+            "SynthesizerConfig": SynthesizerConfig,
+        }
+        return exports[name]
+    raise AttributeError(name)

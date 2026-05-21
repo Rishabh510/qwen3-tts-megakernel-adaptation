@@ -20,6 +20,8 @@ dependencies = [
   "torchaudio",
   "einops",
   "ninja",
+  "faster-whisper",
+  "gradio",
   "pipecat-ai[google,openai,silero,whisper,websocket]",
   "fastapi",
   "uvicorn",

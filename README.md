@@ -38,7 +38,7 @@ kernel under `vendor/qwen_megakernel`.
 Use a CUDA 12.8+ RTX 5090 machine.
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Rishabh510/qwen3-tts-megakernel-adaptation.git
 cd qwen3-tts-megakernel-adaptation
 ./scripts/gpu_bootstrap.sh
 ```
@@ -99,6 +99,22 @@ OpenAI-compatible LLM mode is also available:
 # Fill OPENAI_API_KEY in .env first.
 python demos/pipecat_voice_agent.py --llm-provider openai --port 8765
 ```
+
+Run the browser voice demo:
+
+```bash
+./scripts/run_gradio_demo.sh
+```
+
+Then open it from your laptop using SSH port forwarding:
+
+```bash
+ssh -L 7860:localhost:7860 root@<vast-host> -p <ssh-port>
+```
+
+Open `http://localhost:7860` locally. If SSH forwarding is inconvenient, set
+`GRADIO_SHARE=1` in `.env` before running the demo to request a temporary Gradio
+share URL.
 
 Before renting a GPU, test the constant STT/LLM front half:
 

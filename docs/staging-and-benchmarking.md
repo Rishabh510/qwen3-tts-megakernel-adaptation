@@ -8,6 +8,39 @@
 4. Run `./scripts/run_phase1_smoke.sh`.
 5. Record the generated WAV files and CSV rows from `outputs/`.
 
+Use HTTPS for the public repo:
+
+```bash
+git clone https://github.com/Rishabh510/qwen3-tts-megakernel-adaptation.git
+```
+
+SSH keys are not needed on the rented machine unless you plan to push from it.
+For repeated updates, run:
+
+```bash
+git pull --ff-only
+```
+
+## Browser Demo
+
+Run:
+
+```bash
+./scripts/run_gradio_demo.sh
+```
+
+Recommended access path from your laptop:
+
+```bash
+ssh -L 7860:localhost:7860 root@<vast-host> -p <ssh-port>
+```
+
+Then open `http://localhost:7860` locally, record a short prompt, click the run
+button, and play the generated reply.
+
+If port forwarding is inconvenient, set `GRADIO_SHARE=1` in `.env` before
+running the script. That asks Gradio to create a temporary public share URL.
+
 ## Non-GPU Front-Half Smoke Test
 
 Gemini can be tested without GPU:
