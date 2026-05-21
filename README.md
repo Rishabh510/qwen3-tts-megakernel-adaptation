@@ -100,9 +100,18 @@ OpenAI-compatible LLM mode is also available:
 python demos/pipecat_voice_agent.py --llm-provider openai --port 8765
 ```
 
+Before renting a GPU, test the constant STT/LLM front half:
+
+```bash
+./scripts/setup_frontend_smoke_env.sh
+source .venv-front/bin/activate
+python scripts/smoke_stt_llm.py --whisper-model tiny
+```
+
 ## Working Notes
 
 - [Phase 0/1 Notes](docs/phase-0-1-notes.md)
 - [Implementation Plan](docs/implementation-plan.md)
 - [Optimization Plan](docs/optimization-plan.md)
+- [Staging And Benchmarking](docs/staging-and-benchmarking.md)
 - [Beginner Glossary](docs/beginner-glossary.md)

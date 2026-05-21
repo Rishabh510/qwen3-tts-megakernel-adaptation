@@ -30,7 +30,7 @@ def load_dotenv(path: Path = Path(".env")) -> None:
             os.environ[key] = value
 
 
-async def run_websocket_agent(args) -> None:
+async def run_websocket_agent(websocket, args) -> None:
     from pipecat.audio.vad.silero import SileroVADAnalyzer
     from pipecat.frames.frames import LLMRunFrame
     from pipecat.pipeline.pipeline import Pipeline
@@ -92,13 +92,13 @@ async def run_websocket_agent(args) -> None:
     )
 
     transport = FastAPIWebsocketTransport(
+        websocket,
         params=FastAPIWebsocketParams(
             audio_in_enabled=True,
+            audio_in_sample_rate=16000,
             audio_out_enabled=True,
             audio_out_sample_rate=24000,
         ),
-        host=args.host,
-        port=args.port,
     )
 
     pipeline = Pipeline(
@@ -130,6 +130,21 @@ async def run_websocket_agent(args) -> None:
     await PipelineRunner().run(task)
 
 
+async def serve_websocket_agent(args) -> None:
+    import uvicorn
+    from fastapi import FastAPI, WebSocket
+
+    app = FastAPI()
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(websocket: WebSocket):
+        await run_websocket_agent(websocket, args)
+
+    config = uvicorn.Config(app, host=args.host, port=args.port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
@@ -154,7 +169,7 @@ def main() -> None:
         print("Use demos/pipecat_text_only.py for a no-API-key TTS check.")
         sys.exit(1)
 
-    asyncio.run(run_websocket_agent(args))
+    asyncio.run(serve_websocket_agent(args))
 
 
 if __name__ == "__main__":

@@ -8,12 +8,27 @@ if [ ! -d vendor/qwen_megakernel/.git ]; then
   exit 1
 fi
 
-if git -C vendor/qwen_megakernel apply --check ../../patches/qwen-megakernel-tts-kernel.patch 2>/dev/null; then
-  git -C vendor/qwen_megakernel apply ../../patches/qwen-megakernel-tts-kernel.patch
-  echo "Applied qwen_megakernel CUDA patch."
-else
-  echo "CUDA patch already applied or upstream changed; checking expected markers."
-  grep -q "LDG_VOCAB_SIZE" vendor/qwen_megakernel/csrc/kernel.cu
-  grep -q "input_token_id >= 0" vendor/qwen_megakernel/csrc/kernel.cu
-  echo "Expected CUDA markers found."
+shopt -s nullglob
+patches=(patches/qwen-megakernel-*.patch)
+
+if [ ${#patches[@]} -eq 0 ]; then
+  echo "No qwen_megakernel patches found."
+  exit 0
 fi
+
+for patch in "${patches[@]}"; do
+  patch_from_vendor="../../${patch}"
+  if git -C vendor/qwen_megakernel apply --check "${patch_from_vendor}" 2>/dev/null; then
+    git -C vendor/qwen_megakernel apply "${patch_from_vendor}"
+    echo "Applied ${patch}."
+  elif git -C vendor/qwen_megakernel apply --reverse --check "${patch_from_vendor}" 2>/dev/null; then
+    echo "Already applied ${patch}."
+  else
+    echo "Patch failed or upstream changed: ${patch}" >&2
+    exit 1
+  fi
+done
+
+grep -q "LDG_VOCAB_SIZE" vendor/qwen_megakernel/csrc/kernel.cu
+grep -q "input_token_id >= 0" vendor/qwen_megakernel/csrc/kernel.cu
+echo "Expected CUDA markers found."

@@ -12,6 +12,10 @@ set -a
 source .env
 set +a
 
+export HF_HOME="${HF_HOME:-.cache/huggingface}"
+export NLTK_DATA="${NLTK_DATA:-.cache/nltk_data}"
+mkdir -p "${HF_HOME}" "${NLTK_DATA}"
+
 ./scripts/fetch_vendor_repos.sh
 ./scripts/apply_vendor_patches.sh
 

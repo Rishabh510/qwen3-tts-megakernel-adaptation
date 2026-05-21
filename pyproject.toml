@@ -20,7 +20,7 @@ dependencies = [
   "torchaudio",
   "einops",
   "ninja",
-  "pipecat-ai[google,openai,silero,whisper]",
+  "pipecat-ai[google,openai,silero,whisper,websocket]",
   "fastapi",
   "uvicorn",
 ]

@@ -1,4 +1,5 @@
 .venv/
+.venv-front/
 .env
 __pycache__/
 *.pyc
@@ -8,6 +9,8 @@ outputs/
 *.mp4
 
 .cache/
+hub/
+xet/
 model_cache/
 huggingface/
 
