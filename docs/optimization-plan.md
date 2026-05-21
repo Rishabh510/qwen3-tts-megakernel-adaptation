@@ -35,8 +35,9 @@ Add these one at a time and record a benchmark row after each change.
    text vocab.
 3. **Shared CUDA op lookup**: resolve the registered CUDA decode op once and
    reuse it across talker and code predictor adapters.
-4. **Codebook predictor kernel reuse**: run the 5-layer codebook predictor
-   through the same CUDA path instead of PyTorch.
+4. **Codebook output buffer reuse**: reuse a CUDA output buffer for the 16
+   codebook tokens instead of building a Python list and concatenating every
+   frame.
 5. **Constant embedding cache**: precompute role, TTS special, and codec tag
    embeddings once per process.
 6. **Vocoder warmup**: run dummy decode calls before measuring so first audio

@@ -187,6 +187,7 @@ class CodebookPredictorKernel:
         self.cos_table, self.sin_table = make_rope_tables(CODE_PREDICTOR_MAX_SEQ_LEN, device)
         self.attn_scale = 1.0 / math.sqrt(HEAD_DIM)
         self.token_buf = torch.zeros(1, dtype=torch.long, device=device)
+        self.output_codes = torch.empty(NUM_CODE_GROUPS, dtype=torch.long, device=device)
         self._allocate_state()
 
     def _allocate_state(self) -> None:
@@ -268,7 +269,7 @@ class CodebookPredictorKernel:
         first_embed = torch.nn.functional.embedding(self.token_buf, talker_codec_embedding)[0]
         self._step_embedding(first_embed)
 
-        out = [torch.tensor([first_token], dtype=torch.long, device=self.device)]
+        self.output_codes[0] = first_token
         for group_idx in range(NUM_CODE_GROUPS - 1):
             logits = torch.nn.functional.linear(
                 self.norm_out.to(torch.bfloat16).unsqueeze(0), self.lm_heads[group_idx]
@@ -281,8 +282,8 @@ class CodebookPredictorKernel:
                 token = torch.multinomial(torch.softmax(logits, dim=-1), 1)
             else:
                 token = torch.argmax(logits, keepdim=True).long()
-            out.append(token)
+            self.output_codes[group_idx + 1] = token[0]
             if group_idx < NUM_CODE_GROUPS - 2:
                 embed = torch.nn.functional.embedding(token, self.codec_embeddings[group_idx])[0]
                 self._step_embedding(embed)
-        return torch.cat(out)
+        return self.output_codes.clone()
