@@ -38,22 +38,22 @@ Add these one at a time and record a benchmark row after each change.
 4. **Codebook output buffer reuse**: reuse a CUDA output buffer for the 16
    codebook tokens instead of building a Python list and concatenating every
    frame.
-5. **Next-frame embedding buffer reuse**: build the summed next-frame embedding
-   with direct indexed table reads into a reusable tensor instead of repeated
-   tiny `embedding` calls and temporary additions.
-6. **Two-phase chunk sizing**: emit the first frame immediately for TTFC, then
-   decode larger follow-up chunks to reduce repeated vocoder calls and improve
-   total RTF.
-7. **Sampling warmup**: exercise `topk`, `softmax`, and `multinomial` once before
-   timing sampled generation.
-8. **First-frame-first streaming**: emit the first audio chunk after one codec
-   frame, then batch later chunks for efficiency.
-9. **Chunk-size sweep**: compare chunk sizes such as 1, 5, and 10 frames for TTFC
-   versus smooth playback.
-10. **Stopping heuristic tuning**: tune max-frame limits and EOS handling to avoid
+5. **Warm both codebook paths**: run repeated deterministic and sampled
+   codebook predictions before request timing so `topk`, `softmax`, and
+   `multinomial` do not hit first-call overhead in TTFC.
+6. **Warm vocoder decode shapes**: run dummy one-frame and multi-frame vocoder
+   decodes during initialization so first streamed audio is not paying lazy
+   allocation/JIT cost.
+7. **First-frame-first streaming**: emit the first audio chunk after one codec
+   frame, then use 10-frame follow-up chunks for playback efficiency.
+8. **Stopping heuristic tuning**: tune max-frame limits and EOS handling to avoid
     runaway generation without cutting speech short.
-11. **Audio quality pass**: compare short/medium prompts by ear and mark glitches,
+9. **Audio quality pass**: compare short/medium prompts by ear and mark glitches,
     dropped frames, early cutoff, or repeated speech in the CSV notes.
+
+Evidence note: two attempted Python-side buffer/chunk-size changes were removed
+from the forward plan because the benchmark CSV showed worse RTF. Keep the
+measurement history, but continue from the faster 10-frame streaming path.
 
 ## Benchmark Notes
 

@@ -31,7 +31,7 @@ class SynthesizerConfig:
     model_id: str = "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
     device: str = "cuda"
     sample_rate: int = 24000
-    chunk_frames: int = 24
+    chunk_frames: int = 10
     first_chunk_frames: int = 1
     max_frames: int | None = None
     do_sample: bool = True
@@ -73,12 +73,6 @@ class StreamingSynthesizer:
         self.codebook_predictor = CodebookPredictorKernel(self.weights, device=cfg.device)
         self.text_projector = TextProjector(self.weights)
         self.codec_embedding = self.weights["codec_embedding"]
-        self.next_hidden = torch.empty(
-            self.weights["codec_embedding"].shape[1],
-            dtype=torch.float32,
-            device=cfg.device,
-        )
-        self.next_embedding = torch.empty_like(self.codec_embedding[0])
         self.codebook_embeddings = [
             self.weights["code_predictor"][f"codec_embedding.{idx}.weight"]
             for idx in range(NUM_CODE_GROUPS - 1)
@@ -142,7 +136,7 @@ class StreamingSynthesizer:
     def _warmup(self) -> None:
         self.talker.reset()
         _, hidden = self.talker.step_token(CODEC_BOS_ID)
-        for do_sample in (False, True):
+        for do_sample in (False, False, True, True, True):
             self.codebook_predictor.predict(
                 hidden,
                 CODEC_BOS_ID,
@@ -151,14 +145,16 @@ class StreamingSynthesizer:
                 temperature=self.config.temperature,
                 top_k=self.config.top_k,
             )
-        dummy_codes = torch.randint(
-            0,
-            128,
-            (1, NUM_CODE_GROUPS),
-            dtype=torch.long,
-            device=self.config.device,
-        )
-        self.speech_tokenizer.decode([{"audio_codes": dummy_codes}])
+        for frame_count in (1, 1, 5):
+            dummy_codes = torch.randint(
+                0,
+                2048,
+                (frame_count, NUM_CODE_GROUPS),
+                dtype=torch.long,
+                device=self.config.device,
+            )
+            self.speech_tokenizer.decode([{"audio_codes": dummy_codes}])
+        torch.cuda.synchronize()
         self.talker.reset()
 
     def _prompt_embeddings(self, text: str) -> tuple[torch.Tensor, torch.Tensor]:
@@ -204,18 +200,19 @@ class StreamingSynthesizer:
             )
             yield codes
 
-            self.next_embedding.copy_(self.codec_embedding[codes[0]])
+            embed_sum = torch.nn.functional.embedding(
+                codes[0:1], self.codec_embedding
+            ).squeeze(0)
             for group_idx, embedding_table in enumerate(self.codebook_embeddings):
-                self.next_embedding.add_(embedding_table[codes[group_idx + 1]])
+                embed_sum = embed_sum + torch.nn.functional.embedding(
+                    codes[group_idx + 1 : group_idx + 2], embedding_table
+                ).squeeze(0)
             if trailing_idx < trailing.shape[0]:
-                self.next_embedding.add_(trailing[trailing_idx])
+                embed_sum = embed_sum + trailing[trailing_idx]
                 trailing_idx += 1
             else:
-                self.next_embedding.add_(self.tts_pad)
-            previous_token = self.talker.step_embedding_into(
-                self.next_embedding, self.next_hidden
-            )
-            hidden = self.next_hidden
+                embed_sum = embed_sum + self.tts_pad
+            previous_token, hidden = self.talker.step_embedding(embed_sum)
 
     def decode_frames(self, frames: list[torch.Tensor]) -> tuple[np.ndarray, int]:
         if not frames:

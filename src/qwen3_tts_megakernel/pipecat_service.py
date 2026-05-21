@@ -37,7 +37,7 @@ class MegakernelQwenTTSService(TTSService):
         *,
         model_id: str = "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
         device: str = "cuda",
-        chunk_frames: int = 24,
+        chunk_frames: int = 10,
         notes: str = "",
         sample_rate: Optional[int] = None,
         **kwargs,
