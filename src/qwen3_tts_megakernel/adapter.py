@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from .build_extension import get_extension
+from .build_extension import get_decode_op
 from .constants import (
     CODE_PREDICTOR_LAYERS,
     CODE_PREDICTOR_MAX_SEQ_LEN,
@@ -63,8 +63,7 @@ class TalkerKernelAdapter:
     """Stateful Qwen3-TTS talker decoder using the patched megakernel."""
 
     def __init__(self, weights: dict[str, Any], device: str = "cuda", max_seq_len: int = MAX_SEQ_LEN):
-        get_extension()
-        self._decode = torch.ops.qwen_megakernel_C.decode
+        self._decode = get_decode_op()
         self.device = device
         self.max_seq_len = max_seq_len
         self.position = 0
@@ -154,8 +153,7 @@ class CodebookPredictorKernel:
     """Use the same decode kernel for the 5-layer codebook predictor."""
 
     def __init__(self, weights: dict[str, Any], device: str = "cuda"):
-        get_extension()
-        self._decode = torch.ops.qwen_megakernel_C.decode
+        self._decode = get_decode_op()
         self.device = device
         cp = weights["code_predictor"]
         layer_weights = []
@@ -288,4 +286,3 @@ class CodebookPredictorKernel:
                 embed = torch.nn.functional.embedding(token, self.codec_embeddings[group_idx])[0]
                 self._step_embedding(embed)
         return torch.cat(out)
-

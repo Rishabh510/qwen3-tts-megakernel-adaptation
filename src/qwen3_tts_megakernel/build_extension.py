@@ -5,9 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import torch
 from torch.utils.cpp_extension import load
 
 _MODULE = None
+EXTENSION_NAME = "qwen_megakernel_tts_C"
 
 
 def _root() -> Path:
@@ -53,7 +55,7 @@ def get_extension():
     ]
 
     _MODULE = load(
-        name="qwen_megakernel_tts_C",
+        name=EXTENSION_NAME,
         sources=[str(csrc / "torch_bindings.cpp"), str(csrc / "kernel.cu")],
         extra_cuda_cflags=[
             "-O3",
@@ -68,3 +70,9 @@ def get_extension():
         verbose=bool(int(os.getenv("VERBOSE_BUILD", "0"))),
     )
     return _MODULE
+
+
+def get_decode_op():
+    """Build the extension and return the registered decode op."""
+    get_extension()
+    return getattr(torch.ops, EXTENSION_NAME).decode
