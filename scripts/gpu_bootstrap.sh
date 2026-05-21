@@ -31,8 +31,13 @@ pip install -r requirements-gpu.txt
 pip install -r vendor/qwen_megakernel/requirements.txt
 pip install -e .
 
-# FlashAttention is optional for this v1. The baseline smoke test defaults to
-# SDPA, so failure here should not block setup.
-MAX_JOBS="${MAX_JOBS:-4}" pip install -U flash-attn --no-build-isolation || true
+# FlashAttention is optional for this project. Keep it opt-in because building
+# it can take a long time on rented machines and the baseline smoke test uses
+# SDPA by default.
+if [[ "${INSTALL_FLASH_ATTN:-0}" == "1" ]]; then
+  MAX_JOBS="${MAX_JOBS:-4}" pip install -U flash-attn --no-build-isolation
+else
+  echo "Skipping optional flash-attn install. Set INSTALL_FLASH_ATTN=1 to enable it."
+fi
 
 python scripts/verify_gpu_env.py

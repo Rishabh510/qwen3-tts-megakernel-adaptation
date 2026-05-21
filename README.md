@@ -69,6 +69,7 @@ NLTK_DATA=/workspace/.cache/nltk_data
 GRADIO_HOST=0.0.0.0
 GRADIO_PORT=7860
 ATTN_IMPLEMENTATION=sdpa
+INSTALL_FLASH_ATTN=0
 ```
 
 The bootstrap script:
@@ -79,6 +80,8 @@ The bootstrap script:
 - creates `.venv`
 - installs GPU dependencies, `qwen-tts`, and this package
 - verifies CUDA visibility
+
+FlashAttention is optional and disabled by default as it takes hours to compile. Leave `INSTALL_FLASH_ATTN=0` for the fastest setup path.
 
 Run the smoke test:
 
