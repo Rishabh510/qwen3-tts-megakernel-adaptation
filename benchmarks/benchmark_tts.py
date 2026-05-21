@@ -107,7 +107,7 @@ def main() -> None:
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-0.6B-Base")
     parser.add_argument("--csv", default="outputs/benchmark_results.csv")
     parser.add_argument("--output", default="outputs/benchmark.wav")
-    parser.add_argument("--chunk-frames", type=int, default=10)
+    parser.add_argument("--chunk-frames", type=int, default=20)
     parser.add_argument("--max-frames", type=int)
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--notes", default="")

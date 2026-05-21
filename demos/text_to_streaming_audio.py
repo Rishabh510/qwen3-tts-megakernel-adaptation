@@ -18,7 +18,7 @@ async def main() -> None:
     parser.add_argument("--text", default="Hi there! How can I help you")
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-0.6B-Base")
     parser.add_argument("--output", default="outputs/streaming_demo.wav")
-    parser.add_argument("--chunk-frames", type=int, default=10)
+    parser.add_argument("--chunk-frames", type=int, default=20)
     parser.add_argument("--notes", default="")
     args = parser.parse_args()
 

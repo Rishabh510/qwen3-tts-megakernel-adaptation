@@ -21,4 +21,7 @@ fi
 python demos/gradio_voice_demo.py \
   --host "${GRADIO_HOST:-0.0.0.0}" \
   --port "${GRADIO_PORT:-7860}" \
+  --chunk-frames "${GRADIO_CHUNK_FRAMES:-20}" \
+  --first-chunk-frames "${GRADIO_FIRST_CHUNK_FRAMES:-1}" \
+  --whisper-model "${WHISPER_MODEL:-tiny}" \
   "${share_args[@]}"

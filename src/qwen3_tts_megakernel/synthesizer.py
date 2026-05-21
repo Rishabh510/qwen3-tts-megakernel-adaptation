@@ -30,7 +30,7 @@ class SynthesizerConfig:
     model_id: str = "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
     device: str = "cuda"
     sample_rate: int = 24000
-    chunk_frames: int = 10
+    chunk_frames: int = 20
     first_chunk_frames: int = 1
     max_frames: int | None = None
     do_sample: bool = True

@@ -68,6 +68,9 @@ HF_HOME=/workspace/.cache/huggingface
 NLTK_DATA=/workspace/.cache/nltk_data
 GRADIO_HOST=0.0.0.0
 GRADIO_PORT=7860
+GRADIO_CHUNK_FRAMES=20
+GRADIO_FIRST_CHUNK_FRAMES=1
+WHISPER_MODEL=tiny
 ATTN_IMPLEMENTATION=sdpa
 INSTALL_FLASH_ATTN=0
 ```
@@ -135,18 +138,36 @@ python demos/pipecat_voice_agent.py --llm-provider openai --port 8765
 Run the browser voice demo:
 
 ```bash
+cd /workspace/qwen3-tts-megakernel-adaptation
+source .venv/bin/activate
 ./scripts/run_gradio_demo.sh
 ```
 
 Then open it from your laptop using SSH port forwarding:
 
 ```bash
-ssh -L 7860:localhost:7860 root@<vast-host> -p <ssh-port>
+ssh -i <identity-file> -p <ssh-port> -L 7860:localhost:7860 root@<vast-host>
 ```
 
 Open `http://localhost:7860` locally. If SSH forwarding is inconvenient, set
 `GRADIO_SHARE=1` in `.env` before running the demo to request a temporary Gradio
 share URL.
+
+For the demo recording, show:
+
+1. `outputs/benchmark_results.csv` with the latest `ttfc_ms`, `rtf`,
+   `codebook_ms`, and `vocoder_ms` row.
+2. The Gradio page at `http://localhost:7860`.
+3. A short microphone prompt and the generated audio reply.
+4. The timings textbox in the Gradio page.
+
+Copy generated outputs back to your laptop from a local terminal:
+
+```bash
+scp -i <identity-file> -P <ssh-port> -r \
+  root@<vast-host>:/workspace/qwen3-tts-megakernel-adaptation/outputs \
+  ~/Downloads/qwen3-tts-outputs
+```
 
 To pull updates on the rented machine:
 
