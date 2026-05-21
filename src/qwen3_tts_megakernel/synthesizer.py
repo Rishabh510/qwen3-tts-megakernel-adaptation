@@ -73,6 +73,12 @@ class StreamingSynthesizer:
         self.codebook_predictor = CodebookPredictorKernel(self.weights, device=cfg.device)
         self.text_projector = TextProjector(self.weights)
         self.codec_embedding = self.weights["codec_embedding"]
+        self.next_hidden = torch.empty(
+            self.weights["codec_embedding"].shape[1],
+            dtype=torch.float32,
+            device=cfg.device,
+        )
+        self.next_embedding = torch.empty_like(self.codec_embedding[0])
         self.codebook_embeddings = [
             self.weights["code_predictor"][f"codec_embedding.{idx}.weight"]
             for idx in range(NUM_CODE_GROUPS - 1)
@@ -198,17 +204,18 @@ class StreamingSynthesizer:
             )
             yield codes
 
-            next_embedding = torch.nn.functional.embedding(codes[0:1], self.codec_embedding)[0]
+            self.next_embedding.copy_(self.codec_embedding[codes[0]])
             for group_idx, embedding_table in enumerate(self.codebook_embeddings):
-                next_embedding = next_embedding + torch.nn.functional.embedding(
-                    codes[group_idx + 1 : group_idx + 2], embedding_table
-                )[0]
+                self.next_embedding.add_(embedding_table[codes[group_idx + 1]])
             if trailing_idx < trailing.shape[0]:
-                next_embedding = next_embedding + trailing[trailing_idx]
+                self.next_embedding.add_(trailing[trailing_idx])
                 trailing_idx += 1
             else:
-                next_embedding = next_embedding + self.tts_pad
-            previous_token, hidden = self.talker.step_embedding(next_embedding)
+                self.next_embedding.add_(self.tts_pad)
+            previous_token = self.talker.step_embedding_into(
+                self.next_embedding, self.next_hidden
+            )
+            hidden = self.next_hidden
 
     def decode_frames(self, frames: list[torch.Tensor]) -> tuple[np.ndarray, int]:
         if not frames:

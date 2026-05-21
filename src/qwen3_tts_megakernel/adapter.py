@@ -117,7 +117,14 @@ class TalkerKernelAdapter:
         self.hidden.copy_(embedding.to(torch.bfloat16))
         return self._step(EMBEDDING_SENTINEL_TOKEN_ID)
 
-    def _step(self, token_id: int) -> tuple[int, torch.Tensor]:
+    @torch.no_grad()
+    def step_embedding_into(self, embedding: torch.Tensor, out: torch.Tensor) -> int:
+        self.hidden.copy_(embedding.to(torch.bfloat16))
+        token, hidden = self._step(EMBEDDING_SENTINEL_TOKEN_ID, clone_hidden=False)
+        out.copy_(hidden)
+        return token
+
+    def _step(self, token_id: int, *, clone_hidden: bool = True) -> tuple[int, torch.Tensor]:
         self._decode(
             self.output_token,
             token_id,
@@ -146,7 +153,8 @@ class TalkerKernelAdapter:
             self.attn_scale,
         )
         self.position += 1
-        return int(self.output_token.item()), self.norm_out.clone()
+        hidden = self.norm_out.clone() if clone_hidden else self.norm_out
+        return int(self.output_token.item()), hidden
 
 
 class CodebookPredictorKernel:

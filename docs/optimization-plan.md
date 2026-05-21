@@ -38,8 +38,9 @@ Add these one at a time and record a benchmark row after each change.
 4. **Codebook output buffer reuse**: reuse a CUDA output buffer for the 16
    codebook tokens instead of building a Python list and concatenating every
    frame.
-5. **Constant embedding cache**: precompute role, TTS special, and codec tag
-   embeddings once per process.
+5. **Next-frame embedding buffer reuse**: build the summed next-frame embedding
+   with direct indexed table reads into a reusable tensor instead of repeated
+   tiny `embedding` calls and temporary additions.
 6. **Vocoder warmup**: run dummy decode calls before measuring so first audio
    chunk timing does not include lazy initialization.
 7. **Sampling warmup**: exercise `topk`, `softmax`, and `multinomial` once before
