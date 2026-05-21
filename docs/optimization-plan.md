@@ -45,7 +45,7 @@ Add these one at a time and record a benchmark row after each change.
    decodes during initialization so first streamed audio is not paying lazy
    allocation/JIT cost.
 7. **First-frame-first streaming**: emit the first audio chunk after one codec
-   frame, then use 10-frame follow-up chunks for playback efficiency.
+   frame, then use 20-frame follow-up chunks for playback efficiency.
 8. **GPU-resident talker token**: keep the first codebook token on GPU between
    the talker and codebook predictor instead of calling `.item()` once per
    frame.
@@ -59,7 +59,13 @@ Add these one at a time and record a benchmark row after each change.
 
 Evidence note: two attempted Python-side buffer/chunk-size changes were removed
 from the forward plan because the benchmark CSV showed worse RTF. Keep the
-measurement history, but continue from the faster 10-frame streaming path.
+measurement history, but continue from the measured 20-frame streaming path.
+
+Final measured short-prompt result on RTX 5090:
+
+```text
+ttfc_ms=39.0 rtf=0.161 codebook_ms=606.0 vocoder_ms=241.5 chunk_frames=20
+```
 
 ## Benchmark Notes
 

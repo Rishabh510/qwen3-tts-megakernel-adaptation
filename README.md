@@ -3,6 +3,36 @@
 Adapt Qwen3-TTS 12Hz 0.6B talker decoding to an RTX 5090 CUDA megakernel,
 stream audio chunks, and record benchmark results.
 
+## Demo And Results
+
+- Demo video: [Google Drive](https://drive.google.com/file/d/1N81Rj-_VG1tV9Lx9xw9Qhgr_RM504wuK/view?usp=sharing)
+- Final benchmark prompt: `Hi there! How can I help you`
+- Final measured run on RTX 5090: `ttfc_ms=39.0`, `rtf=0.161`,
+  `codebook_ms=606.0`, `vocoder_ms=241.5`, `chunk_frames=20`
+- Local output artifacts are included under `qwen3-tts-outputs/`.
+
+### Benchmark Progression
+
+All rows use the text prompt `Hi there! How can I help you` on an RTX 5090.
+
+| Stage | Notes | Chunk frames | TTFC ms | RTF | Codebook ms | Vocoder ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline adapted talker | `baseline_adapted_talker_single_run` | 10 | 405.1 | 0.839 | - | - |
+| LM-head launch shape | `opt_02_tts_lm_head_launch_shape` | 10 | 396.3 | 0.807 | - | - |
+| Shared CUDA op lookup | `opt_03_shared_cuda_op_lookup` | 10 | 392.8 | 0.857 | - | - |
+| Codebook output buffer reuse | `opt_04_codebook_output_buffer_reuse` | 10 | 395.5 | 0.805 | - | - |
+| Regressed buffer experiment | `opt_05_next_frame_embedding_buffer_reuse` | 10 | 389.3 | 1.218 | - | - |
+| Regressed chunk experiment | `opt_06_two_phase_chunk_sizing_1_then_24` | 24 | 387.8 | 1.147 | - | - |
+| Reference-aligned warmup restore | `opt_07_reference_aligned_warmup_restore` | 10 | 221.5 | 0.791 | - | - |
+| GPU-resident talker token | `opt_08_gpu_resident_talker_token` | 10 | 275.1 | 0.708 | - | - |
+| Component timing | `opt_09_component_timing` | 10 | 286.8 | 0.698 | 593.5 | 3317.4 |
+| Direct vocoder load | `opt_10_direct_vocoder_load` | 10 | 39.1 | 0.161 | 605.5 | 309.8 |
+| Final chunk sweep | `chunk_20_sweep` | 20 | 39.0 | 0.161 | 606.0 | 241.5 |
+
+The two regressed experiments are kept in the table because they show the
+measurement-driven path: Python-side buffer reuse and larger chunks before
+direct vocoder loading were not retained as final optimizations.
+
 ## Current Scope
 
 First version target:
@@ -94,6 +124,23 @@ python scripts/smoke_stt_llm.py --whisper-model tiny
 ./scripts/run_phase1_smoke.sh
 ```
 
+## Benchmark
+
+Run a text-only TTS benchmark. This is the cleanest way to measure the custom
+adapted TTS path because it excludes STT and LLM latency.
+
+```bash
+source .venv/bin/activate
+python benchmarks/benchmark_tts.py \
+  --text "Hi there! How can I help you" \
+  --notes "final_chunk20_direct_vocoder"
+```
+
+The benchmark CSV is written to `outputs/benchmark_results.csv` by default. It
+runs once by default because repeated generation in the same process can hang on
+some rented GPU images. For steady comparisons, run the command once per code
+state and compare rows with matching notes.
+
 Run only the streaming demo:
 
 ```bash
@@ -102,18 +149,7 @@ python demos/text_to_streaming_audio.py \
   --output outputs/streaming_demo.wav
 ```
 
-Append one benchmark row:
-
-```bash
-python benchmarks/benchmark_tts.py \
-  --text "Hi there! How can I help you" \
-  --notes "baseline_adapted_talker"
-```
-
-The benchmark CSV is written to `outputs/benchmark_results.csv` by default. It
-runs once by default because repeated generation in the same process can hang on
-some rented GPU images. For steady comparisons, run the command once per code
-state and compare rows with matching notes.
+## Demo Harnesses
 
 Run the no-API-key Pipecat-style TTS harness:
 
